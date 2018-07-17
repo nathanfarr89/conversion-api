@@ -4,6 +4,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -16,8 +17,7 @@ func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	//port := ":" + os.Getenv("PORT")
-	port := ":7777"
+	port := ":" + os.Getenv("PORT")
 	router := mux.NewRouter()
 	router.HandleFunc("/", HealthCheckHandler)
 	router.HandleFunc("/weight/{id}", returnWeightConv)
