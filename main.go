@@ -1,24 +1,25 @@
 package main
 
 import (
-	"fmt"
+	"io"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 )
 
-func homePage(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Welcome to the HomePage!")
-	fmt.Println("Endpoint Hit: homepage")
+func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	io.WriteString(w, `{"alive": true}`)
 }
 
 func main() {
-	port := ":" + os.Getenv("PORT")
+	//port := ":" + os.Getenv("PORT")
+	port := ":7777"
 	router := mux.NewRouter()
-	router.HandleFunc("/", homePage)
+	router.HandleFunc("/", HealthCheckHandler)
 	router.HandleFunc("/weight/{id}", returnWeightConv)
 	router.HandleFunc("/temp/{id}", returnTempConv)
 	router.HandleFunc("/measure/{id}", returnMeasureConv)

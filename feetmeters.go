@@ -3,9 +3,8 @@ package main
 import (
 	"conversion-api/feetmetersconv"
 	"encoding/json"
-	"fmt"
+	"io"
 	"net/http"
-	"os"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -15,6 +14,7 @@ type FeetMeters struct {
 	Number float64               `json:"number"`
 	Feet   feetmetersconv.Feet   `json:"feet"`
 	Meters feetmetersconv.Meters `json:"meters"`
+	Error  bool                  `json:"error"`
 }
 
 func returnFeetMetersConv(w http.ResponseWriter, r *http.Request) {
@@ -23,19 +23,29 @@ func returnFeetMetersConv(w http.ResponseWriter, r *http.Request) {
 
 	t, err := strconv.ParseFloat(number, 64)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "feetmeters: %v\n", err)
-		os.Exit(1)
+		conversion := FeetMeters{
+			Number: 0,
+			Feet:   0,
+			Meters: 0,
+			Error:  true,
+		}
+		con, _ := json.Marshal(conversion)
+		s := string(con)
+
+		io.WriteString(w, s)
+	} else {
+		f := feetmetersconv.MtF(feetmetersconv.Meters(t))
+		m := feetmetersconv.FtM(feetmetersconv.Feet(t))
+		conversion := FeetMeters{
+			Number: t,
+			Feet:   f,
+			Meters: m,
+			Error:  false,
+		}
+		con, _ := json.Marshal(conversion)
+		s := string(con)
+
+		io.WriteString(w, s)
 	}
 
-	f := feetmetersconv.MtF(feetmetersconv.Meters(t))
-	m := feetmetersconv.FtM(feetmetersconv.Feet(t))
-	conversion := FeetMeters{
-		Number: t,
-		Feet:   f,
-		Meters: m,
-	}
-	con, _ := json.Marshal(conversion)
-	s := string(con)
-
-	fmt.Fprintf(w, s)
 }

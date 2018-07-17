@@ -3,9 +3,8 @@ package main
 import (
 	"conversion-api/tempconv"
 	"encoding/json"
-	"fmt"
+	"io"
 	"net/http"
-	"os"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -19,6 +18,7 @@ type Temp struct {
 	CtKelvin     tempconv.Kelvin     `json:"ctkelvin"`
 	KtCelsius    tempconv.Celsius    `json:"ktcelsius"`
 	KtFahrenheit tempconv.Fahrenheit `json:"ktfahrenheit"`
+	Error        bool                `json:"error"`
 }
 
 func returnTempConv(w http.ResponseWriter, r *http.Request) {
@@ -27,27 +27,41 @@ func returnTempConv(w http.ResponseWriter, r *http.Request) {
 
 	t, err := strconv.ParseFloat(temp, 64)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "temp: %v\n", err)
-		os.Exit(1)
+		conversion := Temp{
+			Number:       0,
+			FtCelsius:    0,
+			CtFahrenheit: 0,
+			FtKelvin:     0,
+			CtKelvin:     0,
+			KtCelsius:    0,
+			KtFahrenheit: 0,
+			Error:        true,
+		}
+		con, _ := json.Marshal(conversion)
+		s := string(con)
+
+		io.WriteString(w, s)
+	} else {
+		ctf := tempconv.CToF(tempconv.Celsius(t))
+		ftc := tempconv.FToC(tempconv.Fahrenheit(t))
+		ftk := tempconv.FtK(tempconv.Fahrenheit(t))
+		ctk := tempconv.CtK(tempconv.Celsius(t))
+		ktf := tempconv.KtF(tempconv.Kelvin(t))
+		ktc := tempconv.KtC(tempconv.Kelvin(t))
+		conversion := Temp{
+			Number:       t,
+			FtCelsius:    ftc,
+			CtFahrenheit: ctf,
+			FtKelvin:     ftk,
+			CtKelvin:     ctk,
+			KtCelsius:    ktc,
+			KtFahrenheit: ktf,
+			Error:        false,
+		}
+		con, _ := json.Marshal(conversion)
+		s := string(con)
+
+		io.WriteString(w, s)
 	}
 
-	ctf := tempconv.CToF(tempconv.Celsius(t))
-	ftc := tempconv.FToC(tempconv.Fahrenheit(t))
-	ftk := tempconv.FtK(tempconv.Fahrenheit(t))
-	ctk := tempconv.CtK(tempconv.Celsius(t))
-	ktf := tempconv.KtF(tempconv.Kelvin(t))
-	ktc := tempconv.KtC(tempconv.Kelvin(t))
-	conversion := Temp{
-		Number:       t,
-		FtCelsius:    ftc,
-		CtFahrenheit: ctf,
-		FtKelvin:     ftk,
-		CtKelvin:     ctk,
-		KtCelsius:    ktc,
-		KtFahrenheit: ktf,
-	}
-	con, _ := json.Marshal(conversion)
-	s := string(con)
-
-	fmt.Fprintf(w, s)
 }

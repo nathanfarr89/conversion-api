@@ -3,9 +3,8 @@ package main
 import (
 	"conversion-api/measureconv"
 	"encoding/json"
-	"fmt"
+	"io"
 	"net/http"
-	"os"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -15,6 +14,7 @@ type Measure struct {
 	Number      float64                 `json:"number"`
 	Inches      measureconv.Inches      `json:"inches"`
 	Centimeters measureconv.Centimeters `json:"centimeters"`
+	Error       bool                    `json:"error"`
 }
 
 func returnMeasureConv(w http.ResponseWriter, r *http.Request) {
@@ -23,19 +23,29 @@ func returnMeasureConv(w http.ResponseWriter, r *http.Request) {
 
 	t, err := strconv.ParseFloat(measure, 64)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "measure: %v\n", err)
-		os.Exit(1)
+		conversion := Measure{
+			Number:      0,
+			Inches:      0,
+			Centimeters: 0,
+			Error:       true,
+		}
+		con, _ := json.Marshal(conversion)
+		s := string(con)
+
+		io.WriteString(w, s)
+	} else {
+		i := measureconv.CmToI(measureconv.Centimeters(t))
+		c := measureconv.IToCm(measureconv.Inches(t))
+		conversion := Measure{
+			Number:      t,
+			Inches:      i,
+			Centimeters: c,
+			Error:       false,
+		}
+		con, _ := json.Marshal(conversion)
+		s := string(con)
+
+		io.WriteString(w, s)
 	}
 
-	i := measureconv.CmToI(measureconv.Centimeters(t))
-	c := measureconv.IToCm(measureconv.Inches(t))
-	conversion := Measure{
-		Number:      t,
-		Inches:      i,
-		Centimeters: c,
-	}
-	con, _ := json.Marshal(conversion)
-	s := string(con)
-
-	fmt.Fprintf(w, s)
 }
